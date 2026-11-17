@@ -1,0 +1,12 @@
+# Interfaz interna del hotel. Se suma a tu stack actual con otro -f, por ejemplo:
+#   docker compose -f compose.seis.yaml <tus otros -f> -f compose.frontend.yaml up -d --build
+# Abre http://<equipo-del-hotel>:8080
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_HOTEL_NAME: ${VITE_HOTEL_NAME:-HospedaSmart}
+    restart: unless-stopped
+    ports:
+      - "8080:80"

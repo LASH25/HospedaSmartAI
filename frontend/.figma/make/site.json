@@ -1,0 +1,10 @@
+{
+  "description": "Gestiona reservas, habitaciones, huéspedes y cobros desde un solo lugar, con herramientas de IA para optimizar la operación de hoteles boutique.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

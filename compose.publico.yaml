@@ -1,0 +1,22 @@
+services:
+  publico-service:
+    build:
+      context: ./backend/publico-service
+    restart: unless-stopped
+    env_file:
+      - ./correo.env
+    environment:
+      PORT: '3010'
+      N8N_WEBHOOK_URL: http://hospedasmart-n8n:5678/webhook/7bb0a6da-d1a9-4c57-b8a0-ab4149378bdb
+      USUARIOS_URL: http://usuarios-service:3004
+      HABITACIONES_URL: http://habitaciones-service:3002
+      RESERVAS_URL: http://reservas-service:3001
+      HUESPEDES_URL: http://huespedes-service:3003
+      ASISTENTE_URL: http://asistente-service:3005
+      PORTAL_EMAIL: ${PORTAL_EMAIL:?Crea publico.env (ver LEEME_PUBLICO.md)}
+      PORTAL_PASSWORD: ${PORTAL_PASSWORD:?Crea publico.env (ver LEEME_PUBLICO.md)}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+    ports:
+      - "127.0.0.1:3010:3010"

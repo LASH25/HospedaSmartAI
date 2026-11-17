@@ -1,0 +1,27 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n@sha256:9a8d8dcea75667496695d7810d7e1fe018a65efb36cc499d347f3931b3957b5d
+    container_name: hospedasmart-n8n
+    restart: unless-stopped
+    environment:
+      GENERIC_TIMEZONE: America/Mexico_City
+      TZ: America/Mexico_City
+      N8N_SECURE_COOKIE: "false"
+      WEBHOOK_URL: "https://chest-jump-railway.ngrok-free.dev/"
+      N8N_PROXY_HOPS: "1"
+    ports:
+      - "127.0.0.1:5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - hotel
+
+volumes:
+  n8n_data:
+    external: true
+    name: hospedasmart_n8n_data
+
+networks:
+  hotel:
+    external: true
+    name: hospedasmart-stack_default

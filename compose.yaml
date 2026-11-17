@@ -1,0 +1,62 @@
+services:
+  reservas-db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hospeda
+      POSTGRES_PASSWORD: hospeda_local_2026
+      POSTGRES_DB: hospeda_reservas
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - reservas_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "hospeda", "-d", "hospeda_reservas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  habitaciones-db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hospeda
+      POSTGRES_PASSWORD: hospeda_local_2026
+      POSTGRES_DB: hospeda_habitaciones
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - habitaciones_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "hospeda", "-d", "hospeda_habitaciones"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  huespedes-cobros-db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hospeda
+      POSTGRES_PASSWORD: hospeda_local_2026
+      POSTGRES_DB: hospeda_huespedes_cobros
+    ports:
+      - "127.0.0.1:5435:5432"
+    volumes:
+      - huespedes_cobros_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - -U
+        - hospeda
+        - -d
+        - hospeda_huespedes_cobros
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  reservas_data:
+  habitaciones_data:
+  huespedes_cobros_data:

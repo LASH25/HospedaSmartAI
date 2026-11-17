@@ -1,0 +1,16 @@
+# Sitio público para huéspedes. Se suma al stack con otro -f:
+#   docker compose -f compose.estancias.yaml -f compose.ia.yaml -f compose.frontend.yaml -f compose.publico.yaml -f compose.sitio.yaml \
+#     --env-file stack.env --env-file seguridad.env --env-file publico.env up -d --build sitio-publico
+services:
+  sitio-publico:
+    build:
+      context: ./backend/sitio-publico
+    restart: unless-stopped
+    depends_on:
+    - publico-service
+    environment:
+      HOTEL_NOMBRE: ${HOTEL_NOMBRE:-HospedaSmart}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+    # Solo local para probar. En internet lo publica el proxy HTTPS (Fase 4).
+    ports:
+    - 127.0.0.1:8081:80

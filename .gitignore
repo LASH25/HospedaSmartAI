@@ -1,0 +1,48 @@
+
+correo.env
+
+# Credenciales y configuracion privada
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+!*.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependencias y compilaciones
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+__pycache__/
+*.pyc
+
+# Respaldos y datos locales
+*.bak*
+*.antes-*
+/respaldos/
+/datos_migracion/
+/respaldo*.sql
+*.log
+.DS_Store
+
+# Copias antiguas del sitio y herramientas de instalacion
+/Hotel_Habitaciones_Tarifas/
+/herramientas_figma/
+/herramientas_correo/
+/Hotel_Mi_Estancia/backend/
+/Hotel_Mi_Estancia/sitio-publico/
+
+# Codigo archivado y respaldos adicionales
+/backend/_archivo/
+*.respaldo-*
+
+# Archivos del instalador antiguo; conservamos fuente/
+/Hotel_Mi_Estancia/*.json
+/Hotel_Mi_Estancia/*.py

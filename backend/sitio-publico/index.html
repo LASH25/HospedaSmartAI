@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reserva en línea</title>
+  <meta name="description" content="Consulta disponibilidad, reserva tu habitación y pregunta lo que necesites antes de llegar.">
+  <link rel="icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=DM+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="estilos.css?v=correo-1">
+</head>
+<body>
+  <a class="saltar" href="#principal">Ir al contenido</a>
+
+  <header class="barra">
+    <a class="marca" href="#inicio" aria-label="Ir al inicio">
+      <span class="sello" aria-hidden="true">H</span>
+      <span class="marca-nombre" id="hotel-nombre">Hotel 5 Letras</span>
+    </a>
+    <nav aria-label="Principal">
+      <a href="#inicio">Reservar</a>
+      <a href="#mi-reserva">Mi reserva</a>
+      <a href="#asistente">Preguntas</a>
+    </nav>
+  </header>
+
+  <main id="principal">
+    <section class="portada" id="inicio" aria-labelledby="titulo-portada">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">HOTEL 5 LETRAS · RESERVAS EN LÍNEA</p>
+          <h1 id="titulo-portada">Tu próxima pausa<br><em>empieza aquí.</em></h1>
+          <p class="lede">Elige cuándo venir. Encuentra tu habitación y organiza tu estancia en unos cuantos pasos.</p>
+          <a class="boton hero-cta" href="#form-fechas">Encuentra tu habitación <span aria-hidden="true">↗</span></a>
+          <p class="hero-note">Disponibilidad y total antes de confirmar.</p>
+        </div>
+        <div class="hero-art" aria-label="Ilustración decorativa de una habitación; no representa una habitación real" role="img">
+          <div class="art-window"></div><div class="art-sun"></div><div class="art-headboard"></div><div class="art-bed"></div><div class="art-pillow p1"></div><div class="art-pillow p2"></div><div class="art-cover"></div><div class="art-table"></div><div class="art-vase"></div>
+          <span class="art-caption">UNA PAUSA PARA TI <small>Ilustración decorativa</small></span>
+        </div>
+      </div>
+      <div class="booking-heading"><p class="eyebrow">PLANEA TU ESTANCIA</p><h2>¿Cuándo nos visitas?</h2><p>Consulta las opciones para tus fechas.</p></div>
+      <form id="form-fechas" class="fechas" novalidate>
+        <div class="campo">
+          <label for="entrada">Llegada</label>
+          <input type="date" id="entrada" required>
+        </div>
+        <p class="noches" aria-live="polite">
+          <output id="noches-n" for="entrada salida">2</output>
+          <span id="noches-t">noches</span>
+        </p>
+        <div class="campo">
+          <label for="salida">Salida</label>
+          <input type="date" id="salida" required>
+        </div>
+        <div class="campo corto">
+          <label for="personas">Personas</label>
+          <input type="number" id="personas" min="1" max="20" value="2" inputmode="numeric" required>
+        </div>
+        <button class="boton" type="submit" id="btn-buscar">Ver disponibilidad</button>
+      </form>
+      <p class="error" id="error-fechas" role="alert" hidden></p>
+
+      <div id="resultados" class="resultados" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="banda" id="mi-reserva" aria-labelledby="titulo-consulta">
+      <div class="banda-texto">
+        <p class="eyebrow">ANTES DE TU LLEGADA</p><h2 id="titulo-consulta">Consulta tu reserva</h2>
+        <p>Escribe el código que recibiste al reservar y el correo que usaste.</p>
+      </div>
+      <div class="banda-cuerpo">
+        <form id="form-consulta" novalidate>
+          <div class="campo">
+            <label for="c-codigo">Código</label>
+            <input id="c-codigo" autocomplete="off" maxlength="8" spellcheck="false" placeholder="A1B2C3D4" required>
+          </div>
+          <div class="campo">
+            <label for="c-email">Correo</label>
+            <input placeholder="tu@correo.com" type="email" id="c-email" autocomplete="email" maxlength="150" required>
+          </div>
+          <button class="boton" type="submit" id="btn-consulta">Buscar reserva</button>
+        </form>
+        <p class="error" id="error-consulta" role="alert" hidden></p>
+        <dl class="ficha" id="ficha" hidden></dl>
+      </div>
+    </section>
+
+    <section class="asistente" id="asistente" aria-labelledby="titulo-asistente">
+      <div class="asistente-texto">
+        <p class="eyebrow">TE ACOMPAÑAMOS</p><h2 id="titulo-asistente">¿Dudas antes de llegar?</h2>
+        <p>Consulta horarios, políticas o servicios con el asistente. Confirma con recepción cualquier información de demostración.</p>
+        <ul class="sugerencias" aria-label="Preguntas frecuentes">
+          <li><button type="button" class="chip">¿A qué hora es el check-out?</button></li>
+          <li><button type="button" class="chip">¿A qué hora es el check-in?</button></li>
+          <li><button type="button" class="chip">¿Hay desayuno?</button></li>
+        </ul>
+      </div>
+      <div class="asistente-cuerpo">
+        <ol class="conversacion" id="conversacion" aria-live="polite"></ol>
+        <form id="form-asistente" novalidate>
+          <label for="pregunta" class="visible-lector">Tu pregunta</label>
+          <input id="pregunta" maxlength="500" minlength="3" autocomplete="off" placeholder="Escribe tu pregunta" required>
+          <button class="boton" type="submit" id="btn-pregunta">Preguntar</button>
+        </form>
+        <p class="error" id="error-asistente" role="alert" hidden></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <a class="pie-inicio" href="#inicio">Volver al inicio ↑</a><p><span id="pie-hotel">Hotel 5 Letras</span>. Usamos tus datos solo para gestionar tu reserva.</p>
+  </footer>
+
+  <dialog id="dialogo" aria-labelledby="dialogo-titulo">
+    <div id="dialogo-reserva">
+      <div class="dialogo-cab">
+        <h2 id="dialogo-titulo">Reservar</h2>
+        <button type="button" class="cerrar" id="cerrar-dialogo" aria-label="Cerrar">×</button>
+      </div>
+      <p class="resumen" id="resumen"></p>
+      <p class="pasos-reserva">1. Tus datos · 2. Verifica tu correo · 3. Confirma</p>
+      <form id="form-reserva" novalidate>
+        <div class="campo">
+          <label for="nombre">Nombre completo</label>
+          <input id="nombre" autocomplete="name" maxlength="100" required>
+        </div>
+        <div class="campo">
+          <label for="email">Correo</label>
+          <input type="email" id="email" autocomplete="email" maxlength="150" required>
+        </div>
+        <div class="campo">
+          <label for="telefono">Teléfono</label>
+          <input type="tel" id="telefono" autocomplete="tel" maxlength="20" required>
+        </div>
+        <div class="trampa" aria-hidden="true">
+          <label>No llenes este campo<input id="sitio_web" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <div id="turnstile"></div>
+        <div id="paso-correo" class="verificacion-correo" hidden>
+          <label for="codigo-correo">Código de 6 dígitos</label>
+          <input id="codigo-correo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" aria-describedby="estado-correo">
+          <button class="boton secundario" type="button" id="reenviar-correo">Reenviar código</button>
+        </div>
+        <p id="estado-correo" role="status" aria-live="polite">Primero verificaremos tu correo. Este paso no aparta la habitación.</p>
+        <p class="error" id="error-reserva" role="alert" hidden></p>
+        <button class="boton" type="submit" id="btn-reservar">Enviar código a mi correo</button>
+      </form>
+    </div>
+
+    <div id="dialogo-exito" hidden>
+      <div class="dialogo-cab">
+        <h2 id="exito-titulo">Tu reserva quedó registrada</h2>
+        <button type="button" class="cerrar" id="cerrar-exito" aria-label="Cerrar">×</button>
+      </div>
+      <p class="codigo" id="exito-codigo" aria-label="Código de reserva"></p>
+      <p class="resumen" id="exito-resumen"></p>
+      <p>Guarda este código. Con tu correo te permite consultar la reserva.</p>
+      <div class="acciones">
+        <button class="boton" type="button" id="copiar">Copiar código</button>
+        <button class="boton secundario" type="button" id="imprimir">Guardar comprobante</button>
+        <button class="boton secundario" type="button" id="otra">Hacer otra reserva</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="app.js?v=correo-1" defer></script>
+</body>
+</html>
