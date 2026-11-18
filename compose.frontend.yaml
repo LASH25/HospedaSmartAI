@@ -4,7 +4,7 @@
 services:
   frontend:
     build:
-      context: ./frontend
+      context: ./frontend/admin
       args:
         VITE_HOTEL_NAME: ${VITE_HOTEL_NAME:-HospedaSmart}
     restart: unless-stopped

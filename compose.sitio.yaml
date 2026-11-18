@@ -4,7 +4,7 @@
 services:
   sitio-publico:
     build:
-      context: ./backend/sitio-publico
+      context: ./frontend/sitio-publico/servidor
     restart: unless-stopped
     depends_on:
     - publico-service

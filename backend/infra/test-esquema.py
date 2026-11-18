@@ -57,6 +57,8 @@ try:
         "001-inicializar.sql",
         "002-estancias-servicios-pagos.sql",
         "002-estancias-servicios-pagos.sql",
+        "003-facturacion-test.sql",
+        "003-facturacion-test.sql",
     ]:
         ejecutar(
             ["docker", "exec", "-i", nombre, "mysql",
@@ -85,7 +87,7 @@ try:
         "hs_habitaciones": 3,
         "hs_huespedes": 1,
         "hs_reservas": 7,
-        "hs_cobros": 4,
+        "hs_cobros": 5,
         "hs_usuarios": 1,
         "hs_asistente": 3,
     }
@@ -93,7 +95,7 @@ try:
         raise RuntimeError("El número de tablas no coincide: " + str(obtenidas))
 
     print(salida)
-    print("PRUEBA SUPERADA: instalación nueva y segunda ejecución de 002 correctas.")
+    print("PRUEBA SUPERADA: instalación nueva y repetición de 002 y 003 correctas.")
 except subprocess.CalledProcessError as error:
     print("PRUEBA NO SUPERADA:", error.stderr.strip())
     raise SystemExit(1)

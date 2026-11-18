@@ -19,8 +19,8 @@ services:
       start_period: 40s
   reservas-service:
     build:
-      context: ./backend/reservas-service
-      dockerfile: ../infra/Dockerfile
+      context: ./backend/servicios/reservas-service
+      dockerfile: ../../infra/Dockerfile
     restart: unless-stopped
     environment:
       DB_HOST: mysql-stack
@@ -48,8 +48,8 @@ services:
       start_period: 30s
   habitaciones-service:
     build:
-      context: ./backend/habitaciones-service
-      dockerfile: ../infra/Dockerfile
+      context: ./backend/servicios/habitaciones-service
+      dockerfile: ../../infra/Dockerfile
     restart: unless-stopped
     environment:
       DB_HOST: mysql-stack
@@ -108,8 +108,8 @@ services:
       start_period: 30s
   usuarios-service:
     build:
-      context: ./backend/usuarios-service
-      dockerfile: ../infra/Dockerfile
+      context: ./backend/servicios/usuarios-service
+      dockerfile: ../../infra/Dockerfile
     restart: unless-stopped
     environment:
       DB_HOST: mysql-stack
@@ -136,8 +136,8 @@ services:
       start_period: 30s
   asistente-service:
     build:
-      context: ./backend/asistente-service
-      dockerfile: ../infra/Dockerfile
+      context: ./backend/servicios/asistente-service
+      dockerfile: ../../infra/Dockerfile
     restart: unless-stopped
     environment:
       DB_HOST: mysql-stack

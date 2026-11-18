@@ -4,7 +4,7 @@ Qué hace: página en español para ver disponibilidad, reservar directo, consul
 Usa solo `publico-service` (puerto interno 3010). No toca los demás servicios.
 
 ## Instalar (desde ~/HospedaSmartAI)
-1. Descomprime este zip en esa carpeta (crea `backend/sitio-publico/` y `compose.sitio.yaml`).
+1. Descomprime este zip en esa carpeta (crea `frontend/sitio-publico/servidor/` y `compose.sitio.yaml`).
 2. (Opcional) En `publico.env` agrega el nombre de tu hotel:  HOTEL_NOMBRE=Nombre de tu hotel
 3. Levanta:
 

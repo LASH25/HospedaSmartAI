@@ -31,9 +31,9 @@ Los comprobantes actuales no son facturas fiscales CFDI.
 | Componente | Ubicación |
 |---|---|
 | Microservicios | backend/*-service |
-| Panel administrativo | frontend |
-| Portal de huéspedes: código fuente | Hotel_Mi_Estancia/fuente |
-| Servidor del sitio público | backend/sitio-publico |
+| Panel administrativo | frontend/admin |
+| Portal de huéspedes: código fuente | frontend/sitio-publico/fuente |
+| Servidor del sitio público | frontend/sitio-publico/servidor |
 | Infraestructura y pruebas | backend/infra |
 | Esquema inicial | backend/infra/mysql/001-inicializar.sql |
 | Tablas auxiliares | backend/infra/mysql/002-estancias-servicios-pagos.sql |
@@ -153,9 +153,9 @@ URL de producción, manteniendo las cuentas ficticias.
 
 Pruebas automatizadas incluidas:
 
-- backend/reservas-service/test/concurrencia-reservas.mjs
-- backend/reservas-service/test/llave-finalizada.mjs
-- backend/usuarios-service/test/permisos-limpieza.mjs
+- backend/servicios/reservas-service/test/concurrencia-reservas.mjs
+- backend/servicios/reservas-service/test/llave-finalizada.mjs
+- backend/servicios/usuarios-service/test/permisos-limpieza.mjs
 - backend/infra/test-esquema.py
 
 La prueba de concurrencia conserva un huésped ficticio y reservas canceladas
@@ -269,7 +269,35 @@ Comprueba que las rutas de los webhooks coincidan con:
 
 - N8N_WEBHOOK_URL de publico-service: bienvenida.
 - N8N_ENCUESTA_WEBHOOK_URL de reservas-service: encuesta después del check-out.
-- La ruta permitida en backend/sitio-publico/nginx.conf: bot de Telegram.
+- La ruta permitida en frontend/sitio-publico/servidor/nginx.conf: bot de Telegram.
 
 Ajusta WEBHOOK_URL de compose.n8n.yaml al dominio HTTPS propio.
 Publica los flujos después de configurar sus credenciales.
+
+
+## Actualización: app móvil y facturación TEST
+
+La app nativa está en frontend/movil. Sus instrucciones se encuentran en
+frontend/movil/README.md. Se probaron reservas, acceso, QR simulado,
+solicitudes y encuesta de estancia en Android mediante Expo Go.
+
+La facturación de prueba utiliza Facturapi desde cobros-service.
+Permite emitir, consultar y descargar PDF/XML para cuentas cerradas,
+liquidadas y en MXN. Conserva una clave de idempotencia por solicitud.
+
+La configuración privada se guarda en facturacion.env:
+FACTURAPI_SECRET_KEY debe ser una clave sk_test_ propia.
+El archivo facturacion.env.example no contiene credenciales.
+
+La migración 003-facturacion-test.sql incorpora la tabla facturas.
+La prueba SQL actualizada verificó 20 tablas y la repetición de
+las migraciones 002 y 003 en un contenedor temporal aislado.
+
+La factura de demostración agrupa el total en un concepto genérico
+con IVA incluido. No tiene validez fiscal. La configuración de
+conceptos, impuestos y emisión en producción permanece pendiente.
+
+La app móvil y la facturación TEST ya están implementadas; las
+referencias anteriores que las indiquen como pendientes corresponden
+al estado previo. Siguen pendientes el APK independiente, la validación
+completa de instalación y la actualización del documento académico.
