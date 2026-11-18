@@ -46,3 +46,5 @@ __pycache__/
 # Archivos del instalador antiguo; conservamos fuente/
 /Hotel_Mi_Estancia/*.json
 /Hotel_Mi_Estancia/*.py
+/pagos.env
+!/*.env.example

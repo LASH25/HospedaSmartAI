@@ -1,7 +1,7 @@
 from pathlib import Path
 import secrets
 import os
-root = Path(__file__).resolve().parent.parent
+root = Path(__file__).resolve().parents[2]
 file = root/'seguridad.env'
 try:
     with file.open('x') as f:

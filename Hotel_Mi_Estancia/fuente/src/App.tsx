@@ -1058,6 +1058,210 @@ function LlaveDigital({ codigo, csrf }: { codigo: string; csrf: string }) {
   </section>;
 }
 
+
+function SolicitudesEstancia({ codigo, csrf }: { codigo: string; csrf: string }) {
+  type Envio = { id: string; tipo: string; detalle: string };
+  type Solicitud = {
+    id: string; tipo: string; detalle: string; estado: string;
+  };
+  const [tipo, setTipo] = useState("toallas");
+  const [detalle, setDetalle] = useState("");
+  const [lista, setLista] = useState<Solicitud[]>([]);
+  const [cargando, setCargando] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [pendiente, setPendiente] = useState<Envio|null>(null);
+  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const bloqueo = useRef(false);
+  const etiquetas: Record<string,string> = {
+    toallas: "Toallas", limpieza: "Limpieza", mantenimiento: "Mantenimiento",
+    pendiente: "Pendiente", en_atencion: "En atención", completada: "Completada",
+  };
+
+  useEffect(() => {
+    let vigente = true;
+    setLista([]); setCargando(true); setError("");
+    api("estancia/solicitudes/listar", { codigo }, { csrf })
+      .then((r) => { if (vigente) setLista(r.solicitudes); })
+      .catch((e) => { if (vigente) setError(e.message); })
+      .finally(() => { if (vigente) setCargando(false); });
+    return () => { vigente = false; };
+  }, [codigo, csrf]);
+
+  const actualizar = async () => {
+    if (bloqueo.current) return;
+    bloqueo.current = true; setCargando(true); setError("");
+    try {
+      const r = await api("estancia/solicitudes/listar", { codigo }, { csrf });
+      setLista(r.solicitudes);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos consultar las solicitudes.");
+    } finally {
+      bloqueo.current = false; setCargando(false);
+    }
+  };
+
+  const enviar = async () => {
+    if (bloqueo.current) return;
+    bloqueo.current = true; setBusy(true); setError(""); setMensaje("");
+    try {
+      const envio = pendiente ?? {
+        id: crypto.randomUUID(), tipo, detalle: detalle.trim(),
+      };
+      setPendiente(envio);
+      const r = await api("estancia/solicitudes/crear", {
+        codigo, ...envio,
+      }, { csrf });
+      setLista((anteriores) => [
+        r.solicitud, ...anteriores.filter((x) => x.id !== r.solicitud.id),
+      ]);
+      setPendiente(null); setDetalle("");
+      setMensaje("Solicitud registrada. Su estado es pendiente.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos confirmar la solicitud.");
+    } finally {
+      bloqueo.current = false; setBusy(false);
+    }
+  };
+
+  return <section className="profile-card">
+    <p className="eyebrow">SERVICIOS A HABITACIÓN · {codigo}</p>
+    <h3>¿Qué necesitas?</h3>
+    <p>Recepción y el personal del hotel podrán consultar tu solicitud.</p>
+    <fieldset disabled={busy || Boolean(pendiente)} className="booking-fields form-stack">
+      <label>Tipo de solicitud
+        <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+          <option value="toallas">Toallas</option>
+          <option value="limpieza">Limpieza</option>
+          <option value="mantenimiento">Reportar mantenimiento</option>
+        </select>
+      </label>
+      <label>Detalle (opcional)
+        <textarea rows={3} maxLength={1000} value={detalle}
+          onChange={(e) => setDetalle(e.target.value)}
+          placeholder="Por ejemplo: necesito dos toallas." />
+      </label>
+    </fieldset>
+    <button type="button" className="primary" disabled={busy || cargando} onClick={enviar}>
+      {busy ? "Enviando…" : pendiente ? "Reintentar la misma solicitud" : "Enviar solicitud"}
+    </button>
+    {pendiente && !busy && <p>Conservamos los datos para reintentar sin duplicarlos. No recargues la página mientras el resultado esté pendiente.</p>}
+    {error && <p role="alert">{error}</p>}
+    {mensaje && <p role="status">{mensaje}</p>}
+
+    <h3>Mis solicitudes</h3>
+    <button type="button" className="secondary"
+      disabled={busy || cargando} onClick={actualizar}>
+      {cargando ? "Consultando…" : "Actualizar estados"}
+    </button>
+    {!cargando && !lista.length && !error && <p>Todavía no tienes solicitudes.</p>}
+    <ul>
+      {lista.map((x) => <li key={x.id}>
+        <b>{etiquetas[x.tipo] ?? x.tipo}</b>
+        <p>Estado: {etiquetas[x.estado] ?? x.estado}</p>
+        {x.detalle && <p>{x.detalle}</p>}
+      </li>)}
+    </ul>
+    <p>Para una urgencia, contacta directamente con recepción.</p>
+  </section>;
+}
+
+
+function EncuestaEstancia({ codigo, csrf }: { codigo: string; csrf: string }) {
+  const [estado, setEstado] = useState<{
+    disponible: boolean; respondida: boolean;
+  } | null>(null);
+  const [notas, setNotas] = useState({
+    atencion: "", limpieza: "", satisfaccion: "", comentario: "",
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const bloqueo = useRef(false);
+
+  const consultar = async () => {
+    if (bloqueo.current) return;
+    bloqueo.current = true; setBusy(true); setError("");
+    try {
+      const r = await api("estancia/encuesta/estado", { codigo }, { csrf });
+      setEstado(r);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos consultar la encuesta.");
+    } finally {
+      bloqueo.current = false; setBusy(false);
+    }
+  };
+
+  const enviar = async () => {
+    if (bloqueo.current) return;
+    const valores = {
+      atencion: Number(notas.atencion),
+      limpieza: Number(notas.limpieza),
+      satisfaccion: Number(notas.satisfaccion),
+    };
+    if (Object.values(valores).some((n) => !Number.isInteger(n) || n < 1 || n > 5)) {
+      setError("Selecciona una calificación para cada pregunta.");
+      return;
+    }
+    bloqueo.current = true; setBusy(true); setError("");
+    try {
+      await api("estancia/encuesta/guardar", {
+        codigo, ...valores, comentario: notas.comentario.trim(),
+      }, { csrf });
+      setEstado({ disponible: false, respondida: true });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No pudimos confirmar el guardado.");
+    } finally {
+      bloqueo.current = false; setBusy(false);
+    }
+  };
+
+  return <section className="profile-card">
+    <p className="eyebrow">ENCUESTA DE ESTANCIA · {codigo}</p>
+    <h3>¿Cómo fue tu estancia?</h3>
+    {estado?.respondida ? (
+      <p role="status">¡Gracias! Tu evaluación de esta estancia quedó registrada.</p>
+    ) : !estado ? (
+      <>
+        <p>Comparte tu opinión sobre atención, limpieza y experiencia general.</p>
+        <button type="button" className="secondary" disabled={busy} onClick={consultar}>
+          {busy ? "Consultando…" : "Evaluar mi estancia"}
+        </button>
+      </>
+    ) : estado.disponible ? (
+      <>
+        <p>Encuesta opcional. 1 es la calificación más baja y 5 la más alta.</p>
+        <fieldset disabled={busy} className="booking-fields form-stack">
+          {([
+            ["atencion", "Atención recibida"],
+            ["limpieza", "Limpieza durante la estancia"],
+            ["satisfaccion", "Satisfacción general"],
+          ] as const).map(([campo, titulo]) => (
+            <label key={campo}>{titulo}
+              <select value={notas[campo]}
+                onChange={(e) => setNotas((v) => ({ ...v, [campo]: e.target.value }))}>
+                <option value="">Selecciona</option>
+                {[1, 2, 3, 4, 5].map((n) =>
+                  <option key={n} value={n}>{n}</option>)}
+              </select>
+            </label>
+          ))}
+          <label>Comentarios (opcional)
+            <textarea rows={3} maxLength={1000} value={notas.comentario}
+              onChange={(e) => setNotas((v) => ({ ...v, comentario: e.target.value }))} />
+          </label>
+        </fieldset>
+        <button type="button" className="primary" disabled={busy} onClick={enviar}>
+          {busy ? "Guardando…" : "Enviar evaluación"}
+        </button>
+        <p>Solo se registra una evaluación por estancia.</p>
+      </>
+    ) : (
+      <p>La encuesta estará disponible cuando el check-out esté completo.</p>
+    )}
+    {error && <p role="alert">{error}</p>}
+  </section>;
+}
+
 function StayArea() {
   const [data,setData]=useState<any>(null), [loading,setLoading]=useState(true), [busy,setBusy]=useState(false);
   const [phase,setPhase]=useState<"email"|"code">("email"),[email,setEmail]=useState(""),[code,setCode]=useState(""),[challenge,setChallenge]=useState("");
@@ -1104,7 +1308,13 @@ function StayArea() {
   return <div className="page dashboard"><section className="dashboard-head"><div><p className="eyebrow light">MI ESTANCIA · ACCESO PRIVADO</p><h1>Hola, {data.perfil?.nombre||"huésped"}</h1><p>{data.email} · Sesión con vencimiento automático</p></div><button disabled={busy} className="cream-button" onClick={logout}><Icon name="logout"/>Cerrar sesión</button></section>
     <div className="dashboard-grid"><aside><button className={tab==="reservas"?"selected":""} onClick={()=>setTab("reservas")}>Mis reservas</button><button className={tab==="datos"?"selected":""} onClick={()=>setTab("datos")}>Mis datos</button></aside><div className="dashboard-main"><FormError text={error}/>{note&&<p role="status" className="info-callout">{note}</p>}
     {data.reservas.filter((r:any)=>r.estado==="en_estancia").map((r:any)=>(
-      <LlaveDigital key={r.codigo} codigo={r.codigo} csrf={data.csrf}/>
+      <div key={r.codigo}>
+        <LlaveDigital codigo={r.codigo} csrf={data.csrf}/>
+        <SolicitudesEstancia codigo={r.codigo} csrf={data.csrf}/>
+      </div>
+    ))}
+    {data.reservas.filter((r:any)=>r.estado==="finalizada").map((r:any)=>(
+      <EncuestaEstancia key={r.codigo} codigo={r.codigo} csrf={data.csrf}/>
     ))}
     {!data.perfil&&<p className="info-callout">Tu correo está verificado para esta sesión. Aún no hay un huésped registrado con este correo. Usa el mismo correo al reservar.</p>}
     {tab==="reservas"?<><h2>Próximas reservas</h2>{list(upcoming)}<h2>Historial y canceladas</h2>{list(previous)}{receipt&&<article className="stay-receipt stay-print"><p className="eyebrow">HOTEL 5 LETRAS · COMPROBANTE</p><h2>{receipt.codigo}</h2><ReceiptSummary arrival={receipt.fecha_entrada} departure={receipt.fecha_salida} nights={receipt.noches} total={Number(receipt.total)} name={receipt.huesped} status={receipt.estado} room={receipt.tipo_nombre}/><div className="receipt-actions"><button className="secondary" onClick={()=>window.print()}>Guardar comprobante en PDF</button><button className="ghost" onClick={()=>setReceipt(null)}>Cerrar comprobante</button></div></article>}</>:<><h2>Mis datos</h2>{data.perfil&&<form className="profile-card" onSubmit={e=>{e.preventDefault();save()}}><fieldset disabled={busy} className="booking-fields form-stack"><label>Nombre completo<input value={nombre} onChange={e=>setNombre(e.target.value)} minLength={2} maxLength={100} autoComplete="name" required/></label><label>Teléfono<input type="tel" value={telefono} onChange={e=>setTelefono(e.target.value)} minLength={7} maxLength={20} autoComplete="tel" required/></label><label>Correo verificado para este acceso<input value={data.email} readOnly/></label><p>El cambio de correo no está habilitado. Para recibir ayuda, contacta con recepción.</p><button className="primary" disabled={busy}>{busy?"Guardando…":"Guardar mis datos"}</button></fieldset></form>}</>}

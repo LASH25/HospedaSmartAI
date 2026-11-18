@@ -61,6 +61,13 @@ export class PermisosGuard implements CanActivate {
       const r = new RegExp(`^/habitaciones/${uuid}(?:/ocupacion)?$`);
       const estado = new RegExp(`^/habitaciones/${uuid}/estado$`);
       const allowed =
+        (this.servicio === "habitaciones" && (
+          (req.method === "GET" && (path === "/solicitudes-habitacion" ||
+            new RegExp(`^/solicitudes-habitacion/reserva/${uuid}$`).test(path))) ||
+          (req.method === "POST" && path === "/solicitudes-habitacion") ||
+          (req.method === "PATCH" &&
+            new RegExp(`^/solicitudes-habitacion/${uuid}/estado$`).test(path))
+        )) ||
         (this.servicio === 'habitaciones' && ((req.method === 'GET' && (path === '/habitaciones' || r.test(path))) || (req.method === 'PATCH' && estado.test(path)))) ||
         (this.servicio === 'huespedes' && ((req.method === 'GET' && (path === '/huespedes' || new RegExp(`^/huespedes/${uuid}$`).test(path))) || (req.method === 'POST' && path === '/huespedes'))) ||
         (this.servicio === 'reservas' && ((req.method === 'GET' && (path === '/reservas' || new RegExp(`^/reservas/${uuid}(?:/estancia)?$`).test(path))) || (req.method === 'POST' && (path === '/reservas' || new RegExp(`^/reservas/${uuid}/(?:check-in|check-out)$`).test(path))) || (req.method === 'PATCH' && new RegExp(`^/reservas/${uuid}/cancelar$`).test(path)))) ||
@@ -71,6 +78,10 @@ export class PermisosGuard implements CanActivate {
     }
     if (this.servicio === 'asistente' && ((req.method === 'POST' && path === '/asistente/preguntar') || (req.method === 'GET' && path === '/conocimientos/buscar'))) return true;
     if (this.servicio === 'habitaciones') {
+      if (req.method === "GET" && path === "/solicitudes-habitacion") return true;
+      if (req.method === "PATCH" &&
+          new RegExp(`^/solicitudes-habitacion/${uuid}/estado$`).test(path)) return true;
+
       if (req.method === 'GET' && (path === '/habitaciones' || new RegExp(`^/habitaciones/${uuid}(?:/ocupacion)?$`).test(path))) return true;
       if (req.method === 'PATCH' && new RegExp(`^/habitaciones/${uuid}/estado$`).test(path) && ['disponible', 'limpieza'].includes(req.body?.estado_operativo)) return true;
     }

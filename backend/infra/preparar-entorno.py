@@ -2,7 +2,7 @@
 import os
 import secrets
 from pathlib import Path
-root = Path(__file__).resolve().parent.parent
+root = Path(__file__).resolve().parents[2]
 path = root / 'stack.env'
 try:
     with path.open('x') as f:

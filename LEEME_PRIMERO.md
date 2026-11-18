@@ -1,133 +1,275 @@
-# HospedaSmart AI: revisión y primer paquete de arranque
+# HospedaSmart AI
 
-Revisión: 2 de noviembre de 2026. Este paquete complementa el proyecto original; no es el PMS terminado.
+Sistema académico de gestión hotelera con microservicios, panel administrativo,
+portal de huéspedes y automatizaciones.
 
-## Lo que encontré en tu ZIP
+Repositorio: https://github.com/LASH25/HospedaSmartAI
 
-| Componente | Evidencia en el código | Pendiente |
-|---|---|---|
-| Reservas | Alta, listado, consulta, cancelación; valida fechas, huésped y habitación; bloqueo transaccional para evitar reservas cruzadas | Verificar consultas y concurrencia contra MySQL real; check-in/check-out |
-| Habitaciones | Alta, listado, consulta y cambio de estado | Verificar persistencia e integración |
-| Huéspedes | Alta, listado y consulta | Edición y otras funciones administrativas |
-| Cobros | Apertura y consulta de cuentas; reutiliza cuenta por reserva | Registro de consumos, pagos, saldos y cierre; no hay endpoints para estas operaciones |
-| Usuarios | Login, JWT, consulta de perfil, hash scrypt, limitación de intentos y comando para crear administrador | Administración de usuarios y autorización por roles en los demás servicios |
-| Asistente | Búsqueda FULLTEXT y registro de preguntas/respuestas | Modelo de IA, contexto hotelero, Telegram y vectores |
-| n8n y aplicación móvil | Sin implementación localizada en el ZIP | Desarrollar |
+Actualizado: 18 de noviembre de 2026.
 
-Los cinco AppModule usan MySQL. El Compose principal solo define tres bases PostgreSQL. El Compose MySQL solo define el motor; no define las aplicaciones. Los SQL incluidos usan UUID, TIMESTAMPTZ y otras construcciones de PostgreSQL. No se localizaron esquemas MySQL para reproducir las bases desde cero.
+## Funciones implementadas
 
-Por ello, que `docker compose ps` no muestre microservicios se explica por la configuración: el archivo principal no los define. La revisión del ZIP no permite saber por qué una base de habitaciones de tu equipo estaba detenida; para eso hacen falta sus logs.
+- Reservas, cancelación y control transaccional de disponibilidad.
+- Check-in y check-out coordinados entre reservas, habitaciones y cobros.
+- Huéspedes, consumos, pagos, saldo y cierre de cuentas.
+- Autenticación y permisos para administración, recepción y limpieza.
+- Portal privado Mi estancia mediante verificación por correo.
+- Llave QR de demostración con vigencia de cinco minutos.
+- Solicitudes de toallas, limpieza y mantenimiento.
+- Encuestas de reserva y estancia.
+- Correos de bienvenida e invitación a encuesta después del check-out.
+- Asistente con búsqueda FULLTEXT en MySQL y generación con Ollama.
+- Atención por Telegram mediante n8n.
+- Mercado Pago Checkout Pro con cuentas de prueba, consulta y webhook firmado.
 
-## Qué incorpora este paquete
+La llave QR simula el acceso: no abre una cerradura física.
+La integración de Mercado Pago está limitada a vendedores de prueba.
+Los comprobantes actuales no son facturas fiscales CFDI.
 
-- `compose.stack.yaml`: cinco aplicaciones y un MySQL con seis bases lógicas. No son seis servidores separados.
-- `infra/Dockerfile`: compilación y ejecución de cada servicio con Node 24.
-- `infra/mysql/001-inicializar.sql`: esquema MySQL compatible con las consultas encontradas, índices, tabla de bloqueos, búsqueda FULLTEXT y ejemplos identificados como demostración.
-- `infra/preparar-entorno.py`: genera claves locales nuevas sin cambiar tus `.env` anteriores.
-- `infra/probar-integracion.py`: prueba HTTP secuencial con registros nuevos y comprobaciones de comportamiento. Deja esos registros para inspeccionarlos.
+## Componentes
 
-Se usa un proyecto Compose y volumen nuevos (`hospedasmart-stack`). Tus volúmenes anteriores no se migran ni se modifican. Los archivos CSV no se importan automáticamente. Esta configuración es para desarrollo local: utiliza root en MySQL y todavía hay rutas de negocio sin autenticación; antes de desplegar deben implementarse permisos y usuarios de base de datos con privilegios limitados.
+| Componente | Ubicación |
+|---|---|
+| Microservicios | backend/*-service |
+| Panel administrativo | frontend |
+| Portal de huéspedes: código fuente | Hotel_Mi_Estancia/fuente |
+| Servidor del sitio público | backend/sitio-publico |
+| Infraestructura y pruebas | backend/infra |
+| Esquema inicial | backend/infra/mysql/001-inicializar.sql |
+| Tablas auxiliares | backend/infra/mysql/002-estancias-servicios-pagos.sql |
 
-## 1. Colocar los archivos
+MySQL aloja seis bases lógicas: hs_reservas, hs_habitaciones,
+hs_huespedes, hs_cobros, hs_usuarios y hs_asistente.
 
-Haz una copia de tu carpeta original, por ejemplo `~/HospedaSmartAI_pruebas`. Descomprime este paquete y copia **el contenido** de `HospedaSmartAI_Arranque` dentro de esa copia, junto a las cinco carpetas de servicios y sus archivos package-lock.json.
+## Configuración local
 
-La estructura debe quedar así:
+Requisitos: Docker con Compose, Python 3 y conexión a internet para descargar
+imágenes y dependencias. ngrok permite publicar el sitio desde el equipo local.
+Ollama ejecuta el modelo llama3.2:3b.
 
-```text
-HospedaSmartAI_pruebas/
-  compose.stack.yaml
-  LEEME_PRIMERO.md
-  infra/
-  reservas-service/
-  habitaciones-service/
-  huespedes-cobros-service/
-  usuarios-service/
-  asistente-service/
-```
+Los archivos locales de configuración no se incluyen en Git:
 
-No reemplaces los Compose antiguos ni copies este paquete dentro de un solo microservicio.
+| Archivo | Contenido |
+|---|---|
+| stack.env | Contraseña de MySQL y secreto JWT |
+| seguridad.env | Credenciales internas entre servicios |
+| publico.env | Cuenta del portal, origen público y protección del formulario |
+| correo.env | Remitente Gmail y contraseña de aplicación |
+| pagos.env | Credencial de prueba, origen público y secreto del webhook |
 
-## 2. Preparar y levantar
+Los archivos *.env.example contienen únicamente los nombres de las variables.
+Deben completarse localmente con valores propios. Las claves internas deben
+ser aleatorias y distintas. PORTAL_EMAIL y PORTAL_PASSWORD deben corresponder
+a una cuenta activa de recepción registrada en el sistema.
 
-En Ubuntu/WSL, con Docker funcionando e integración con WSL habilitada:
+Una instalación nueva también requiere crear el administrador, configurar
+la cuenta de recepción y preparar los flujos y credenciales de n8n.
+Los ejemplos de entorno no crean estas cuentas ni esos flujos.
 
-```bash
-cd ~/HospedaSmartAI_pruebas
-python3 infra/preparar-entorno.py
-docker compose --env-file stack.env -f compose.stack.yaml config --quiet
-docker compose --env-file stack.env -f compose.stack.yaml up -d --build
-docker compose --env-file stack.env -f compose.stack.yaml ps
-```
+## Arranque de una instalación configurada
 
-La primera ejecución descarga imágenes e instala dependencias; necesita internet. Si ya hay aplicaciones usando los puertos 3001–3005, detén esas instancias antes de levantar esta copia. No hace falta detener tus PostgreSQL de los puertos 5433–5435.
-
-Espera a que las seis filas aparezcan saludables. Si falla alguna:
-
-```bash
-docker compose --env-file stack.env -f compose.stack.yaml logs --tail=100 mysql-stack reservas-service habitaciones-service huespedes-cobros-service usuarios-service asistente-service
-```
-
-El SQL de inicialización solo corre al crear el volumen nuevo. Si falla la inicialización, conserva los logs y revisa el problema antes de volver a intentar. No borres volúmenes para corregir errores.
-
-## 3. Ejecutar la prueba de integración
+Desde la raíz del repositorio:
 
 ```bash
-python3 infra/probar-integracion.py
+docker compose --env-file stack.env --env-file seguridad.env --env-file publico.env \
+  -f compose.estancias.yaml -f compose.ia.yaml -f compose.frontend.yaml \
+  -f compose.publico.yaml -f compose.sitio.yaml up -d --build
 ```
 
-Comprueba salud de los cinco servicios, crea huésped/habitación, reserva dos noches por $1,600, exige HTTP 409 ante cruce de fechas, rechaza fechas invertidas, acepta periodos contiguos, rechaza mantenimiento, abre una cuenta sin duplicarla, cancela una reserva y consulta la fuente documental. Si una comprobación falla, termina mostrando el endpoint y la respuesta recibida. No comprueba pagos reales ni concurrencia de peticiones simultáneas.
+Para consultar el estado, utiliza el mismo comando sustituyendo
+`up -d --build` por `ps`.
 
-## 4. Crear tu administrador
+Los SQL se ejecutan en orden al inicializar un volumen MySQL vacío.
+Agregar 002 no lo ejecuta automáticamente en un volumen existente.
+Para instalaciones anteriores debe aplicarse como actualización controlada,
+con respaldo previo. No borres el volumen del hotel para aplicar cambios.
 
-El script original ya incluye la creación del administrador. Introduce una contraseña propia de entre 12 y 128 caracteres sin guardarla en el historial:
+El esquema de 001 es para inicialización; no está diseñado para repetirse.
+002 usa CREATE TABLE IF NOT EXISTS: puede repetirse, pero no modifica
+estructuras de tablas que ya existan.
+
+## Acceso local
+
+| Componente | Dirección |
+|---|---|
+| Panel administrativo | http://localhost:8080 |
+| Sitio público | http://localhost:8081 |
+| n8n | http://localhost:5678 |
+| Reservas | http://localhost:3001/salud |
+| Habitaciones | http://localhost:3002/salud |
+| Huéspedes | http://localhost:3003/salud |
+| Usuarios | http://localhost:3004/salud |
+| Asistente | http://localhost:3005/salud |
+| Cobros | http://localhost:3006/salud |
+
+n8n utiliza su despliegue separado de compose.n8n.yaml.
+Ollama debe estar disponible desde asistente-service.
+
+## Publicación temporal
 
 ```bash
-read -rsp 'Contraseña del administrador: ' ADMIN_PASSWORD
-printf '\n'
-export ADMIN_PASSWORD
-docker compose --env-file stack.env -f compose.stack.yaml exec -e ADMIN_PASSWORD usuarios-service node dist/crear-admin.js
-unset ADMIN_PASSWORD
+ngrok http 8081
 ```
 
-El correo será `admin@hospedasmart.local`. Si ya existe, el comando conserva la cuenta anterior.
+Configura PUBLIC_ORIGIN y MERCADOPAGO_PUBLIC_URL con el origen HTTPS asignado.
+Si cambia el dominio, actualiza también las URLs de n8n y Mercado Pago que
+dependan de él y recrea los servicios afectados.
 
-Puedes probar `POST http://localhost:3004/auth/login` en Postman con este JSON, sustituyendo la contraseña:
+La laptop, Docker y ngrok deben permanecer activos para mantener el acceso
+público. Ollama debe permanecer activo para generar respuestas del asistente.
 
-```json
-{"email":"admin@hospedasmart.local","password":"TU_CONTRASEÑA"}
+## Mercado Pago de prueba
+
+- La credencial del vendedor permanece únicamente en cobros-service.
+- El backend calcula el importe a partir del saldo pendiente.
+- El comprador utiliza una cuenta y medios de pago de prueba.
+- El regreso del navegador no acredita por sí solo un pago.
+- Consultar pago verifica la operación directamente con Mercado Pago.
+- El webhook público es POST /api/pagos/webhook.
+- Las notificaciones se validan mediante firma HMAC.
+- Se comprueban vendedor de prueba, referencia, importe, moneda y reembolsos.
+- Los reintentos utilizan una clave idempotente para evitar abonos duplicados.
+
+En las pruebas realizadas, Checkout Pro devolvió live_mode=true para
+operaciones de cuentas ficticias. La restricción de prueba comprueba
+la etiqueta test_user del vendedor.
+
+La URL de notificación debe configurarse en el ambiente que corresponda a
+la operación. La verificación realizada requirió configurar también la
+URL de producción, manteniendo las cuentas ficticias.
+
+## Pruebas verificadas
+
+| Prueba | Resultado |
+|---|---|
+| Doce reservas simultáneas para el mismo periodo y habitación | Una aceptada y once conflictos |
+| Llave aún vigente asociada a una estancia finalizada | Validación y nueva emisión rechazadas |
+| Permisos directos de limpieza | Accesos permitidos y bloqueos 403 verificados |
+| Acceso sin sesión a habitaciones | Rechazado con 401 |
+| Instalación SQL aislada | 19 tablas creadas en seis bases |
+| Segunda ejecución de 002 | Correcta |
+| Mercado Pago de prueba | Pago y confirmación automática comprobados |
+| Consulta y reenvío de pago | Sin duplicar el abono |
+
+Pruebas automatizadas incluidas:
+
+- backend/reservas-service/test/concurrencia-reservas.mjs
+- backend/reservas-service/test/llave-finalizada.mjs
+- backend/usuarios-service/test/permisos-limpieza.mjs
+- backend/infra/test-esquema.py
+
+La prueba de concurrencia conserva un huésped ficticio y reservas canceladas
+como evidencia. La prueba de llave revierte su transacción. La prueba de
+permisos elimina el usuario temporal. La prueba SQL elimina su contenedor
+aislado y no utiliza el volumen del hotel.
+
+Ejecutar la prueba SQL:
+
+```bash
+python3 backend/infra/test-esquema.py
 ```
 
-Después consulta `GET http://localhost:3004/auth/me` con `Authorization: Bearer TU_ACCESS_TOKEN`. No compartas el token.
+## Pendientes y alcance
 
-## Direcciones
+- Aplicación móvil en React Native.
+- Facturación fiscal CFDI.
+- Integración con cerraduras físicas.
+- Completar las instrucciones de instalación nueva y el empaquetado de
+  los flujos n8n sin credenciales ni datos personales.
+- Actualizar el documento académico con el estado final.
 
-| Servicio | Puerto | Comprobación |
-|---|---|---|
-| Reservas | 3001 | http://localhost:3001/salud |
-| Habitaciones | 3002 | http://localhost:3002/salud |
-| Huéspedes y cobros | 3003 | http://localhost:3003/salud |
-| Usuarios | 3004 | http://localhost:3004/salud |
-| Asistente | 3005 | http://localhost:3005/salud |
+El despliegue actual corresponde a una demostración académica.
 
-## Verificación realizada aquí
 
-- Los cinco servicios compilaron sin errores con TypeScript y las dependencias del ZIP. No se ejecutaron scripts de instalación de esas dependencias.
-- Pasaron siete pruebas aisladas de reglas existentes: total por noches, fechas invertidas, fecha inexistente, mantenimiento, huésped inexistente, reutilización de cuenta y respuesta documental sin fuentes. Estas pruebas usan sustitutos de repositorios y no acceden a una base real.
-- Se revisó la estructura YAML y la sintaxis Python de este paquete.
-- **No hay Docker ni MySQL disponibles en este entorno. No se ha ejecutado el build de las imágenes, validado el SQL en MySQL ni pasado la prueba HTTP de integración.** La configuración queda preparada para comprobarla en tu equipo.
+## Preparación de una instalación nueva
 
-El estado correcto por ahora es «código compilable y paquete de arranque preparado; integración pendiente de ejecución», no «sistema completo funcionando».
+Desde la raíz del proyecto, genera los secretos locales:
 
-## Orden para continuar
+```bash
+python3 backend/infra/preparar-entorno.py
+python3 backend/infra/preparar-seguridad.py
+```
 
-1. Ejecutar este arranque y la prueba HTTP; corregir cualquier error real de MySQL o Docker.
-2. Verificar persistencia tras reiniciar y hacer una prueba concurrente de reservas para la misma habitación.
-3. Completar administración de usuarios y permisos en todos los servicios.
-4. Implementar consumos, pagos idempotentes, saldo y cierre de cuentas, con pruebas de importes.
-5. Implementar check-in/check-out e impedir cambios incompatibles en reservas y cuentas.
-6. Añadir IA y Telegram; después automatizaciones con n8n y aplicación móvil.
+Los scripts crean stack.env y seguridad.env en la raíz y conservan los
+archivos si ya existen. No copies encima los ejemplos vacíos.
 
-El ZIP original contenía archivos `.env`. No se incluyen en este paquete. Si las claves originales se reutilizan en servicios reales, cámbialas y evita compartirlas en próximas entregas.
+Copia los otros ejemplos únicamente si todavía no existen sus archivos:
 
-Para continuar con evidencia, comparte la salida de `ps` y de `python3 infra/probar-integracion.py`; si falla el arranque, comparte los logs eliminando claves y datos personales.
+```bash
+python3 -c 'from pathlib import Path; import shutil; [(shutil.copyfile(str(p)+".example",p)) for p in map(Path,["publico.env","correo.env","pagos.env"]) if not p.exists()]'
+```
+
+Completa localmente esos archivos antes del arranque:
+
+- PORTAL_EMAIL y PORTAL_PASSWORD: credenciales previstas para la cuenta
+  de recepción que crearás en el panel.
+- GMAIL_USUARIO y GMAIL_APP_PASSWORD: cuenta remitente y contraseña de aplicación.
+- PUBLIC_ORIGIN y MERCADOPAGO_PUBLIC_URL: origen público HTTPS.
+- MERCADOPAGO_ACCESS_TOKEN: credencial del vendedor de prueba.
+- MERCADOPAGO_WEBHOOK_SECRET: secreto correspondiente al webhook configurado.
+- TRUST_PROXY: revisa su valor según el proxy utilizado; Compose usa 0 por defecto.
+- TURNSTILE_SECRET: configuración opcional de protección del formulario.
+
+No confirmes estos archivos privados en Git. Los archivos de ejemplo no
+contienen valores funcionales.
+
+Después ejecuta el comando de arranque indicado anteriormente y comprueba
+la salud de los servicios.
+
+### Crear el administrador
+
+El siguiente comando solicita la contraseña sin mostrarla y la transmite
+al proceso del contenedor sin incluirla en los argumentos del comando:
+
+```bash
+python3 -c '
+import getpass
+import os
+import subprocess
+p = getpass.getpass("Contraseña del administrador (12 a 128 caracteres): ")
+if not 12 <= len(p) <= 128:
+    raise SystemExit("Longitud inválida.")
+entorno = os.environ.copy()
+entorno["ADMIN_PASSWORD"] = p
+subprocess.run(
+    ["docker", "exec", "-e", "ADMIN_PASSWORD",
+     "hospedasmart-stack-usuarios-service-1",
+     "node", "dist/crear-admin.js"],
+    env=entorno, check=True
+)
+'
+```
+
+El correo del administrador es admin@hospedasmart.local.
+Si ya existe, el comando conserva la cuenta y su contraseña.
+
+Inicia sesión en el panel administrativo y crea una cuenta con rol
+recepcionista cuyos datos coincidan con PORTAL_EMAIL y PORTAL_PASSWORD.
+El portal utiliza esa cuenta para comunicarse con los servicios.
+
+### Preparar n8n
+
+Con la pila principal en funcionamiento, crea el volumen externo si aún
+no existe y levanta n8n:
+
+```bash
+docker volume create hospedasmart_n8n_data
+docker compose -p hospedasmart-n8n -f compose.n8n.yaml up -d
+```
+
+La red externa hospedasmart-stack_default debe existir previamente.
+En una instalación nueva, abre http://localhost:5678 y configura la cuenta
+propietaria de n8n.
+
+Configura las credenciales de correo y Telegram dentro de n8n e importa
+los flujos disponibles. Las credenciales no se transfieren mediante los
+archivos de ejemplo.
+
+Comprueba que las rutas de los webhooks coincidan con:
+
+- N8N_WEBHOOK_URL de publico-service: bienvenida.
+- N8N_ENCUESTA_WEBHOOK_URL de reservas-service: encuesta después del check-out.
+- La ruta permitida en backend/sitio-publico/nginx.conf: bot de Telegram.
+
+Ajusta WEBHOOK_URL de compose.n8n.yaml al dominio HTTPS propio.
+Publica los flujos después de configurar sus credenciales.

@@ -84,3 +84,29 @@ export const cerrarCuenta = (id: string) => post(`cuentas/${id}/cerrar`);
 export const preguntarAsistente = (datos: unknown) => post("asistente/preguntar", datos);
 export const buscarConocimientos = (q: string) =>
   api(`conocimientos/buscar?q=${encodeURIComponent(q)}`);
+
+// --- Solicitudes a habitacion ---
+export type SolicitudHabitacionApi = {
+  id: string;
+  habitacion_numero: string;
+  tipo: string;
+  detalle: string;
+  estado: "pendiente" | "en_atencion" | "completada";
+};
+export const getSolicitudesHabitacion = () =>
+  api<SolicitudHabitacionApi[]>("solicitudes-habitacion");
+export const actualizarSolicitudHabitacion = (
+  id: string, estado: "en_atencion" | "completada",
+) => api<SolicitudHabitacionApi>(`solicitudes-habitacion/${id}/estado`, {
+  method: "PATCH", body: JSON.stringify({ estado }),
+});
+
+// Mercado Pago: integración de prueba.
+export const generarPagoMercadoPago = (id: string) =>
+  post<{ intento_id: string; enlace: string; demostracion: boolean }>(
+    `cuentas/${id}/mercadopago`
+  );
+export const consultarPagoMercadoPago = (id: string) =>
+  post<{ estado: string; enlace?: string; mensaje?: string }>(
+    `cuentas/${id}/mercadopago/consultar`
+  );

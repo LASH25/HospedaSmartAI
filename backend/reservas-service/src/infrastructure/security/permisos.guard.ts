@@ -61,10 +61,12 @@ export class PermisosGuard implements CanActivate {
       const r = new RegExp(`^/habitaciones/${uuid}(?:/ocupacion)?$`);
       const estado = new RegExp(`^/habitaciones/${uuid}/estado$`);
       const allowed =
+        (this.servicio === "reservas" && req.method === "GET" &&
+          new RegExp(`^/reservas/${uuid}/encuesta-estancia$`).test(path)) ||
         (this.servicio === "reservas" && req.method === "POST" && path === "/llaves/validar") ||
         (this.servicio === 'habitaciones' && ((req.method === 'GET' && (path === '/habitaciones' || r.test(path))) || (req.method === 'PATCH' && estado.test(path)))) ||
         (this.servicio === 'huespedes' && ((req.method === 'GET' && (path === '/huespedes' || new RegExp(`^/huespedes/${uuid}$`).test(path))) || (req.method === 'POST' && path === '/huespedes'))) ||
-        (this.servicio === 'reservas' && ((req.method === 'GET' && (path === '/reservas' || new RegExp(`^/reservas/${uuid}(?:/estancia)?$`).test(path))) || (req.method === 'POST' && (path === '/reservas' || new RegExp(`^/reservas/${uuid}/(?:check-in|check-out|encuesta|llave)$`).test(path))) || (req.method === 'PATCH' && new RegExp(`^/reservas/${uuid}/cancelar$`).test(path)))) ||
+        (this.servicio === 'reservas' && ((req.method === 'GET' && (path === '/reservas' || new RegExp(`^/reservas/${uuid}(?:/estancia)?$`).test(path))) || (req.method === 'POST' && (path === '/reservas' || new RegExp(`^/reservas/${uuid}/(?:check-in|check-out|encuesta|llave|encuesta-estancia)$`).test(path))) || (req.method === 'PATCH' && new RegExp(`^/reservas/${uuid}/cancelar$`).test(path)))) ||
         (this.servicio === 'cobros' && ((req.method === 'GET' && new RegExp(`^/cuentas/${uuid}(?:/resumen)?$`).test(path)) || (req.method === 'POST' && (path === '/cuentas/abrir' || new RegExp(`^/cuentas/${uuid}/(?:consumos|pagos|cerrar)$`).test(path))))) ||
         (this.servicio === 'asistente' && ((req.method === 'POST' && path === '/asistente/preguntar') || (req.method === 'GET' && path === '/conocimientos/buscar')));
       if (allowed) return true;

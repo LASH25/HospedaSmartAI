@@ -21,6 +21,8 @@ export class PermisosGuard implements CanActivate {
     if (req.method === 'GET' && path === '/salud') return true;
     // El perfil conserva su guard JWT local; el login conserva su límite de intentos.
     if (this.servicio === 'usuarios' && ((req.method === 'POST' && path === '/auth/login') || (req.method === 'GET' && path === '/auth/me'))) return true;
+    // Esta ruta valida la firma de Mercado Pago en su controlador.
+    if (req.method === "POST" && path === "/cuentas/mercadopago/webhook") return true;
     const bearer = req.headers.authorization;
     if (!bearer) {
       const caller = req.headers['x-hospeda-servicio'];
@@ -64,7 +66,7 @@ export class PermisosGuard implements CanActivate {
         (this.servicio === 'habitaciones' && ((req.method === 'GET' && (path === '/habitaciones' || r.test(path))) || (req.method === 'PATCH' && estado.test(path)))) ||
         (this.servicio === 'huespedes' && ((req.method === 'GET' && (path === '/huespedes' || new RegExp(`^/huespedes/${uuid}$`).test(path))) || (req.method === 'POST' && path === '/huespedes'))) ||
         (this.servicio === 'reservas' && ((req.method === 'GET' && (path === '/reservas' || new RegExp(`^/reservas/${uuid}(?:/estancia)?$`).test(path))) || (req.method === 'POST' && (path === '/reservas' || new RegExp(`^/reservas/${uuid}/(?:check-in|check-out)$`).test(path))) || (req.method === 'PATCH' && new RegExp(`^/reservas/${uuid}/cancelar$`).test(path)))) ||
-        (this.servicio === 'cobros' && ((req.method === 'GET' && new RegExp(`^/cuentas/${uuid}(?:/resumen)?$`).test(path)) || (req.method === 'POST' && (path === '/cuentas/abrir' || new RegExp(`^/cuentas/${uuid}/(?:consumos|pagos|cerrar)$`).test(path))))) ||
+        (this.servicio === 'cobros' && ((req.method === 'GET' && new RegExp(`^/cuentas/${uuid}(?:/resumen)?$`).test(path)) || (req.method === 'POST' && (path === '/cuentas/abrir' || new RegExp(`^/cuentas/${uuid}/(?:consumos|pagos|cerrar|mercadopago(?:/consultar)?)$`).test(path))))) ||
         (this.servicio === 'asistente' && ((req.method === 'POST' && path === '/asistente/preguntar') || (req.method === 'GET' && path === '/conocimientos/buscar')));
       if (allowed) return true;
       throw new ForbiddenException('Tu rol no tiene permiso para esta operación.');

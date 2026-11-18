@@ -1,0 +1,58 @@
+{
+  "name": "Encuesta después del check-out.",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "encuesta-checkout-hotel5letras",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ac318823-9e44-49d7-a26d-f4caddb123bb",
+      "name": "Webhook",
+      "webhookId": "130bade4-afbd-43fd-9aa2-d2aac92d0942"
+    },
+    {
+      "parameters": {
+        "fromEmail": "remitente@example.com",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "¿Cómo fue tu estancia en Hotel 5 Letras?",
+        "emailFormat": "text",
+        "text": "=Hola {{ $json.body.nombre }},\n\nGracias por hospedarte en Hotel 5 Letras.\n\nTe invitamos a evaluar la atención, la limpieza y tu experiencia general.\n\nEntra aquí:\n{{ $json.body.enlace }}\n\nAccede a Mi estancia con este mismo correo y busca la encuesta de la reserva {{ $json.body.codigo }}.\n\nLa encuesta es opcional. ¡Gracias por compartir tu opinión!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -624,
+        -208
+      ],
+      "id": "2f8f6bea-21ff-4aad-9dd5-965df0507155",
+      "name": "Send an Email",
+      "webhookId": "5e46ea32-dbd9-48b6-82d2-b3ad464b42f2"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

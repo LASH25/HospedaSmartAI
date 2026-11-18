@@ -62,6 +62,12 @@ export class MysqlEstanciasRepository {
       if(p?.fase!==(accion==='entrada'?'entrada_pendiente':'salida_pendiente'))throw new ConflictException('La operación de estancia cambió.');
       await m.query('UPDATE reservas SET estado=? WHERE id=?',[destino,id]);
       await m.query(`UPDATE procesos_estancia SET fase=?, ${accion==='entrada'?'entrada_en':'salida_en'}=CURRENT_TIMESTAMP WHERE reserva_id=?`,[destino,id]);
+      if (accion === "salida") {
+        await m.query(
+          "INSERT IGNORE INTO avisos_encuesta (reserva_id) VALUES (?)",
+          [id],
+        );
+      }
       return { reserva:await this.reserva(m,id), proceso:(await m.query<ProcesoEstancia[]>('SELECT * FROM procesos_estancia WHERE reserva_id=?',[id]))[0] };
     });
   }

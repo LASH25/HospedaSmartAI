@@ -1,3 +1,4 @@
+import { useRef as useSolicitudRef } from "react";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import {
   abrirCuenta,
@@ -11,6 +12,8 @@ import {
   crearUsuario,
   cambiarEstadoHabitacion, getHabitaciones,
   getHabitacion,
+  getSolicitudesHabitacion,
+  actualizarSolicitudHabitacion,
   getHuespedes,
   getOcupacion,
   getReservas,
@@ -19,6 +22,8 @@ import {
   getUsuarios,
   login as apiLogin,
   preguntarAsistente,
+  generarPagoMercadoPago,
+  consultarPagoMercadoPago,
   registrarPago,
   setToken,
   setUsuario,
@@ -756,6 +761,117 @@ function habitacionARoom(h: HabitacionApi): Room {
   };
 }
 
+
+function BandejaSolicitudes() {
+  type Solicitud = {
+    id: string; habitacion_numero: string; tipo: string; detalle: string;
+    estado: "pendiente" | "en_atencion" | "completada";
+  };
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+  const [cargando, setCargando] = useState(false);
+  const [accion, setAccion] = useState("");
+  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [verCompletadas, setVerCompletadas] = useState(false);
+  const vigente = useSolicitudRef(false);
+  const bloqueo = useSolicitudRef(false);
+  const etiquetas: Record<string, string> = {
+    toallas: "Toallas", limpieza: "Limpieza", mantenimiento: "Mantenimiento",
+    pendiente: "Pendiente", en_atencion: "En atención", completada: "Completada",
+  };
+
+  const cargar = async () => {
+    if (bloqueo.current) return;
+    bloqueo.current = true;
+    setCargando(true); setError(""); setMensaje("");
+    try {
+      const datos = await getSolicitudesHabitacion();
+      if (!Array.isArray(datos)) throw new Error("Respuesta de solicitudes no válida.");
+      if (vigente.current) setSolicitudes(datos);
+    } catch (e) {
+      if (vigente.current) setError(e instanceof Error ? e.message : "No se pudo cargar la bandeja.");
+    } finally {
+      bloqueo.current = false;
+      if (vigente.current) setCargando(false);
+    }
+  };
+
+  useEffect(() => {
+    vigente.current = true;
+    void cargar();
+    return () => { vigente.current = false; };
+  }, []);
+
+  const cambiar = async (id: string, estado: "en_atencion" | "completada") => {
+    if (bloqueo.current) return;
+    bloqueo.current = true;
+    setAccion(id); setError(""); setMensaje("");
+    try {
+      const actualizada = await actualizarSolicitudHabitacion(id, estado);
+      if (vigente.current) {
+        setSolicitudes((anteriores) => anteriores.map(
+          (s) => s.id === id ? { ...s, ...actualizada } : s
+        ));
+        setMensaje(estado === "completada"
+          ? "Solicitud completada." : "Solicitud en atención.");
+      }
+    } catch (e) {
+      if (vigente.current) setError(e instanceof Error ? e.message : "No se pudo actualizar.");
+    } finally {
+      bloqueo.current = false;
+      if (vigente.current) setAccion("");
+    }
+  };
+
+  const visibles = solicitudes.filter(
+    (s) => verCompletadas || s.estado !== "completada"
+  );
+  return <section className="drawer-section" aria-labelledby="titulo-solicitudes">
+    <h2 id="titulo-solicitudes">Solicitudes a habitación</h2>
+    <p>Últimas 100 solicitudes permitidas para tu rol. Actualiza para consultar cambios.</p>
+    <button type="button" className="secondary-button"
+      disabled={cargando || accion !== ""} onClick={cargar}>
+      {cargando ? "Cargando…" : "Actualizar solicitudes"}
+    </button>
+    <label>
+      <input type="checkbox" checked={verCompletadas}
+        onChange={(e) => setVerCompletadas(e.target.checked)} />
+      Mostrar completadas
+    </label>
+    {error && <p className="form-error" role="alert">{error}</p>}
+    {mensaje && <p role="status">{mensaje}</p>}
+    {!cargando && !error && !visibles.length &&
+      <p>No hay solicitudes para mostrar.</p>}
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", textAlign: "left" }}>
+        <caption>Atención de solicitudes de huéspedes</caption>
+        <thead><tr>
+          <th scope="col">Habitación</th><th scope="col">Servicio</th>
+          <th scope="col">Detalle</th><th scope="col">Estado</th>
+          <th scope="col">Acción</th>
+        </tr></thead>
+        <tbody>{visibles.map((s) => <tr key={s.id}>
+          <td>{s.habitacion_numero}</td>
+          <td>{etiquetas[s.tipo] ?? s.tipo}</td>
+          <td style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+            {s.detalle || "Sin detalle"}
+          </td>
+          <td>{etiquetas[s.estado] ?? s.estado}</td>
+          <td>{s.estado !== "completada" ? (
+            <button type="button" className="secondary-button"
+              disabled={cargando || accion !== ""}
+              onClick={() => cambiar(s.id,
+                s.estado === "pendiente" ? "en_atencion" : "completada")}>
+              {accion === s.id ? "Guardando…"
+                : s.estado === "pendiente" ? "Atender" : "Completar"}
+            </button>
+          ) : "Finalizada"}</td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+  </section>;
+}
+
 function Rooms() {
   type ReservaCalendario = {
     habitacion_id: string;
@@ -927,6 +1043,7 @@ function Rooms() {
           <Icon name="plus" /> Nueva habitación
         </button>
       </header>
+      <BandejaSolicitudes />
       <section className="rooms-toolbar">
         <div className="view-toggle">
           <button className={view === "map" ? "active" : ""} onClick={() => setView("map")}>
@@ -2053,6 +2170,11 @@ function Payments() {
   const [guardando, setGuardando] = useState(false);
   const [errorModal, setErrorModal] = useState("");
   const [checkedOut, setCheckedOut] = useState(false);
+  const [ocupadoMP, setOcupadoMP] = useState(false);
+  const [resultadoMP, setResultadoMP] = useState<{
+    cuentaId: string; mensaje: string; enlace?: string;
+  } | null>(null);
+
 
   useEffect(() => {
     let vigente = true;
@@ -2136,6 +2258,41 @@ function Payments() {
       setErrorModal(err instanceof Error ? err.message : "No se pudo guardar.");
     } finally {
       setGuardando(false);
+    }
+  };
+
+
+  const gestionarMercadoPago = async (consultar: boolean) => {
+    if (!resumen || ocupadoMP) return;
+    const cuentaId = resumen.cuenta.id;
+    setOcupadoMP(true);
+    setResultadoMP(null);
+    try {
+      if (consultar) {
+        const r = await consultarPagoMercadoPago(cuentaId);
+        setResultadoMP({
+          cuentaId,
+          mensaje: r.mensaje ?? (r.estado === "sin_intento"
+            ? "Esta cuenta todavía no tiene un intento de pago."
+            : r.estado),
+          enlace: r.estado === "pendiente" ? r.enlace : undefined,
+        });
+      } else {
+        const r = await generarPagoMercadoPago(cuentaId);
+        setResultadoMP({
+          cuentaId,
+          mensaje: "Enlace de prueba generado. Ábrelo para continuar.",
+          enlace: r.enlace,
+        });
+      }
+      await recargar();
+    } catch (e) {
+      setResultadoMP({
+        cuentaId,
+        mensaje: e instanceof Error ? e.message : "No se pudo consultar Mercado Pago.",
+      });
+    } finally {
+      setOcupadoMP(false);
     }
   };
 
@@ -2228,8 +2385,32 @@ function Payments() {
                 <button onClick={() => abrirModal("payment")} disabled={cerrada || saldoCero}>
                   <Icon name="card" /> Registrar pago
                 </button>
+                <button
+                  onClick={() => gestionarMercadoPago(false)}
+                  disabled={cerrada || saldoCero || ocupadoMP}
+                >
+                  Generar enlace de prueba
+                </button>
+                <button
+                  onClick={() => gestionarMercadoPago(true)}
+                  disabled={ocupadoMP}
+                >
+                  {ocupadoMP ? "Consultando…" : "Consultar pago"}
+                </button>
+
               </div>
             </div>
+
+            {resultadoMP?.cuentaId === resumen.cuenta.id && (
+              <div style={{ padding: 16 }} aria-live="polite">
+                <p>{resultadoMP.mensaje}</p>
+                {resultadoMP.enlace && (
+                  <a href={resultadoMP.enlace} target="_blank" rel="noopener noreferrer">
+                    Abrir Mercado Pago de prueba
+                  </a>
+                )}
+              </div>
+            )}
             <div className="movement-timeline">
               <div className="charge">
                 <i>·</i>

@@ -1,0 +1,94 @@
+{
+  "name": "Concierge Hotel 5 Letras",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "cdc0e995-4028-4965-b2d6-0eb0c97e27fa",
+      "name": "Telegram Trigger",
+      "webhookId": "077fbf66-1af2-40cd-98f6-03f504473e56"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://publico-service:3010/api/publico/asistente",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "pregunta",
+              "value": "={{ $json.message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        288,
+        0
+      ],
+      "id": "53ab1205-8eca-467c-a149-d8827ad6361d",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ String($json.respuesta ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        0
+      ],
+      "id": "d4c35bca-d004-4df1-86ac-2e5e66465ac0",
+      "name": "Send a text message",
+      "webhookId": "fc3f2485-6621-4b26-86fb-685e827ccf95",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

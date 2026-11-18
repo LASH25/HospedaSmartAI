@@ -1,3 +1,5 @@
+import { AvisosEncuestaService } from "./avisos-encuesta.service";
+import { EncuestasEstanciaController } from "./http/encuestas-estancia.controller";
 import { LlavesController } from "./http/llaves.controller";
 import { EncuestasController } from "./http/encuestas.controller";
 import { MysqlEstanciasRepository } from './database/mysql-estancias.repository';
@@ -16,8 +18,9 @@ import { HttpHabitacionesGateway } from './http/clients/http-habitaciones.gatewa
 import { HttpHuespedesGateway } from './http/clients/http-huespedes.gateway';
 
 @Module({
-  controllers: [ReservasController, EstanciasController, EncuestasController, LlavesController],
+  controllers: [ReservasController, EstanciasController, EncuestasController, LlavesController, EncuestasEstanciaController],
   providers: [
+    AvisosEncuestaService,
     MysqlEstanciasRepository, CoordinadorEstancias,
     {
       provide: RESERVAS_REPOSITORY,

@@ -40,6 +40,9 @@ services:
       INTERNAL_SERVICE_TOKEN: ${RESERVAS_INTERNAL_TOKEN:?Genera seguridad.env}
       COBROS_SERVICE_URL: http://cobros-service:3006
       HOTEL_TIMEZONE: America/Mexico_City
+      N8N_ENCUESTA_WEBHOOK_URL: http://hospedasmart-n8n:5678/webhook/encuesta-checkout-hotel5letras
+      ENCUESTA_PUBLIC_URL: ${PUBLIC_ORIGIN:?Configura PUBLIC_ORIGIN en publico.env}
+
     ports:
     - 127.0.0.1:3001:3001
     depends_on:
@@ -190,6 +193,8 @@ services:
       context: ./backend/cobros-service
       dockerfile: ../infra/Dockerfile
     restart: unless-stopped
+    env_file:
+      - ./pagos.env
     environment:
       DB_HOST: mysql-stack
       DB_PORT: '3306'

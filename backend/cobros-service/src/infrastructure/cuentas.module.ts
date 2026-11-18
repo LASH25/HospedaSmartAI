@@ -1,3 +1,4 @@
+import { MercadoPagoController } from "./http/mercadopago.controller";
 import { EstanciasCobrosController } from './http/estancias-internas.controller';
 import { MysqlMovimientosRepository } from './database/mysql-movimientos.repository';
 import { MovimientosController } from './http/movimientos.controller';
@@ -15,7 +16,7 @@ import { CuentasController } from './http/cuentas.controller';
 import { HttpHuespedesGateway } from './http/clients/http-huespedes.gateway';
 
 @Module({
-  controllers: [CuentasController, MovimientosController, EstanciasCobrosController],
+  controllers: [MercadoPagoController, CuentasController, MovimientosController, EstanciasCobrosController],
   providers: [
     MysqlMovimientosRepository,
     { provide: HUESPEDES_GATEWAY, useClass: HttpHuespedesGateway },

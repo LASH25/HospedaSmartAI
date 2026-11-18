@@ -52,7 +52,7 @@ CREATE TABLE cuentas (
  creada_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
  CHECK (total_estancia >= 0), CHECK (moneda='MXN'), CHECK (estado IN ('abierta','cerrada'))
 ) ENGINE=InnoDB;
--- Consumos y pagos: esquema preparado; el código aún no expone sus endpoints.
+-- Consumos y pagos de las cuentas de estancia.
 CREATE TABLE consumos (
  id CHAR(36) PRIMARY KEY, cuenta_id CHAR(36) NOT NULL, concepto VARCHAR(150) NOT NULL,
  cantidad INT NOT NULL, precio_unitario DECIMAL(12,2) NOT NULL,

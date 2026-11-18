@@ -1,0 +1,78 @@
+{
+  "name": "Bienvenida Hotel 5 Letras",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "chatId": "CONFIGURAR_CHAT_ID_RECEPCION",
+        "text": "={{ $json.body.mensaje }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "70ffad15-c568-4ccb-9ed8-eb79f8f27158",
+      "name": "Send a text message",
+      "webhookId": "4964432c-2cec-4ecb-baab-7d4b14964252"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "7bb0a6da-d1a9-4c57-b8a0-ab4149378bdb",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3f0a9e82-700c-4787-b564-e78f5726a063",
+      "name": "Webhook",
+      "webhookId": "7bb0a6da-d1a9-4c57-b8a0-ab4149378bdb"
+    },
+    {
+      "parameters": {
+        "fromEmail": "remitente@example.com",
+        "toEmail": "={{ $json.body.email }}",
+        "subject": "=Confirmación de reserva — Hotel 5 Letras",
+        "emailFormat": "text",
+        "text": "=Hola {{ $json.body.nombre }},\n\nGracias por reservar en Hotel 5 Letras.\n\nCódigo: {{ $json.body.codigo }}\nHabitación: {{ $json.body.habitacion }}\nEntrada: {{ $json.body.fecha_entrada }}\nSalida: {{ $json.body.fecha_salida }}\nNoches: {{ $json.body.noches }}\nTotal de la reserva: ${{ $json.body.total\n}} MXN\n\nConserva tu código para consultar tu reserva.\n¡Te esperamos!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        544,
+        256
+      ],
+      "id": "f6121f00-98d5-4903-9aed-bf90bfc485d2",
+      "name": "Send an Email",
+      "webhookId": "b814ff15-5cd6-4e2b-8b4d-8d5620bdac5d"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

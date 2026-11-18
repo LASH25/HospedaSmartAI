@@ -623,6 +623,124 @@ export function crearServidor(sobrescribir = {}, deps = {}) {
             mensaje: "Acceso simulado autorizado. No se abrió una puerta física.",
           });
         }
+
+        if (req.method === "POST" && [
+          "/api/publico/estancia/solicitudes/crear",
+          "/api/publico/estancia/solicitudes/listar",
+        ].includes(ruta)) {
+          exigirLimite(`solicitudes:${session.key}`, 30, 60000);
+          const b = await leerJson(req);
+          if (!b || typeof b !== "object" || Array.isArray(b) ||
+              typeof b.codigo !== "string" || !/^[A-F0-9]{8}$/.test(b.codigo))
+            throw new AccesoError(400, "Selecciona una reserva válida.");
+
+          const hs = await listar(cfg.huespedes, "/huespedes");
+          const h = hs.find((x) => normalizarEmail(x.email) === session.email);
+          if (!h) throw new AccesoError(404, "No encontramos esa reserva.");
+          const reservas = await listar(cfg.reservas, "/reservas");
+          const propias = reservas.filter((r) =>
+            r.huesped_id === h.id &&
+            String(r.id).slice(0, 8).toUpperCase() === b.codigo
+          );
+          if (propias.length !== 1)
+            throw new AccesoError(404, "No encontramos una reserva única con ese código.");
+          const reserva = propias[0];
+
+          if (ruta === "/api/publico/estancia/solicitudes/listar") {
+            const r = await conAuth(cfg.habitaciones,
+              `/solicitudes-habitacion/reserva/${encodeURIComponent(reserva.id)}`);
+            if (r.status !== 200 || !Array.isArray(r.data))
+              throw new AccesoError(503, "No pudimos consultar tus solicitudes.");
+            return enviar(200, { solicitudes: r.data });
+          }
+
+          if (reserva.estado !== "en_estancia")
+            throw new AccesoError(409, "Solo puedes solicitar servicios durante una estancia activa.");
+          if (typeof b.id !== "string" ||
+              !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(b.id) ||
+              !["toallas", "limpieza", "mantenimiento"].includes(b.tipo) ||
+              (b.detalle !== undefined &&
+                (typeof b.detalle !== "string" || b.detalle.length > 1000)))
+            throw new AccesoError(400, "Revisa el tipo de solicitud y su descripción.");
+
+          const r = await conAuth(cfg.habitaciones, "/solicitudes-habitacion", {
+            method: "POST",
+            body: {
+              id: b.id, reserva_id: reserva.id,
+              tipo: b.tipo, detalle: (b.detalle ?? "").trim(),
+            },
+          });
+          if (r.status === 409)
+            throw new AccesoError(409, "La estancia ya no está activa o el identificador corresponde a otra solicitud.");
+          if (r.status === 400)
+            throw new AccesoError(400, "Revisa los datos de la solicitud.");
+          if (r.status !== 200)
+            throw new AccesoError(503, "No pudimos confirmar la solicitud. Reintenta conservando el mismo identificador.");
+          return enviar(200, {
+            solicitud: {
+              id: r.data.id, tipo: r.data.tipo, detalle: r.data.detalle,
+              estado: r.data.estado, creada_en: r.data.creada_en,
+            },
+          });
+        }
+
+        if (req.method === "POST" && [
+          "/api/publico/estancia/encuesta/estado",
+          "/api/publico/estancia/encuesta/guardar",
+        ].includes(ruta)) {
+          exigirLimite(`encuesta-estancia:${session.key}`, 20, 60000);
+          const b = await leerJson(req);
+          if (!b || typeof b !== "object" || Array.isArray(b) ||
+              typeof b.codigo !== "string" || !/^[A-F0-9]{8}$/.test(b.codigo))
+            throw new AccesoError(400, "Selecciona una reserva válida.");
+
+          const hs = await listar(cfg.huespedes, "/huespedes");
+          const h = hs.find((x) => normalizarEmail(x.email) === session.email);
+          if (!h) throw new AccesoError(404, "No encontramos esa reserva.");
+          const reservas = await listar(cfg.reservas, "/reservas");
+          const propias = reservas.filter((r) =>
+            r.huesped_id === h.id &&
+            String(r.id).slice(0, 8).toUpperCase() === b.codigo
+          );
+          if (propias.length !== 1)
+            throw new AccesoError(404, "No encontramos una reserva única con ese código.");
+          const reserva = propias[0];
+          const destino = `/reservas/${encodeURIComponent(reserva.id)}/encuesta-estancia`;
+
+          if (ruta === "/api/publico/estancia/encuesta/estado") {
+            const r = await conAuth(cfg.reservas, destino);
+            if (r.status !== 200)
+              throw new AccesoError(503, "No pudimos consultar la encuesta.");
+            return enviar(200, {
+              disponible: r.data.disponible === true,
+              respondida: r.data.respondida === true,
+            });
+          }
+
+          for (const campo of ["atencion", "limpieza", "satisfaccion"]) {
+            if (!Number.isInteger(b[campo]) || b[campo] < 1 || b[campo] > 5)
+              throw new AccesoError(400, "Selecciona una calificación del 1 al 5 en cada pregunta.");
+          }
+          if (b.comentario !== undefined &&
+              (typeof b.comentario !== "string" || b.comentario.length > 1000))
+            throw new AccesoError(400, "El comentario admite hasta 1000 caracteres.");
+
+          const r = await conAuth(cfg.reservas, destino, {
+            method: "POST",
+            body: {
+              atencion: b.atencion, limpieza: b.limpieza,
+              satisfaccion: b.satisfaccion,
+              comentario: (b.comentario ?? "").trim(),
+            },
+          });
+          if (r.status === 409)
+            throw new AccesoError(409, "La encuesta solo está disponible después del check-out.");
+          if (r.status === 400)
+            throw new AccesoError(400, "Revisa las calificaciones y el comentario.");
+          if (r.status !== 200)
+            throw new AccesoError(503, "No pudimos confirmar el guardado. Puedes reintentar sin duplicar la respuesta.");
+          return enviar(200, { registrada: true });
+        }
         if (req.method === "GET" && ruta === "/api/publico/estancia/me") return enviar(200, await datosEstancia(session));
         if (req.method === "POST" && ruta === "/api/publico/estancia/salir") {
           acceso.cerrar(session.key);

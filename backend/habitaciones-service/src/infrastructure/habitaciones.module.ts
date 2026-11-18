@@ -1,3 +1,4 @@
+import { SolicitudesController } from "./http/solicitudes.controller";
 import { OcupacionesRepository, OcupacionesController, OcupacionesInternasController } from './http/ocupaciones.controller';
 import { Module } from '@nestjs/common';
 import { ServicioHabitaciones } from '../application/servicio-habitaciones';
@@ -7,7 +8,7 @@ import { MysqlHabitacionesRepository } from './database/mysql-habitaciones.repos
 import { HabitacionesController } from './http/habitaciones.controller';
 
 @Module({
-  controllers: [HabitacionesController, OcupacionesController, OcupacionesInternasController],
+  controllers: [HabitacionesController, OcupacionesController, OcupacionesInternasController, SolicitudesController],
   providers: [
     OcupacionesRepository,
     {
